@@ -1,0 +1,13 @@
+{
+  "tailwindCSS.classAttributes": [
+    "class",
+    "className",
+    "ngClass",
+    "styleClass"
+  ],
+  "cSpell.words": ["floatlabel", "inputtext", "primeng"],
+  "[html]": {
+    "editor.wordWrap": "wordWrapColumn",
+    "editor.wordWrapColumn": 80
+  }
+}

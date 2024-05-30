@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, inject } from '@angular/core';
 import { Router } from '@angular/router';
-import { injectForm, injectStore, TanStackField } from '@tanstack/angular-form';
+import { TanStackField, injectForm, injectStore } from '@tanstack/angular-form';
 import {
   injectMutation,
   injectQuery,
@@ -11,7 +11,7 @@ import { zodValidator } from '@tanstack/zod-form-adapter';
 import { ButtonModule } from 'primeng/button';
 import { DropdownModule } from 'primeng/dropdown';
 import { InputTextModule } from 'primeng/inputtext';
-import { fromEvent, lastValueFrom, Observable, of, takeUntil } from 'rxjs';
+import { Observable, fromEvent, lastValueFrom, of, takeUntil } from 'rxjs';
 import {
   CreatePackageDto,
   PackageService,
@@ -39,7 +39,7 @@ export class PackageComponent {
   packageService = inject(PackageService);
   packageMutation = injectMutation(() => ({
     mutationFn: (dto: CreatePackageDto) =>
-      lastValueFrom(this.packageService.createPackage(dto)).then(response => {
+      lastValueFrom(this.packageService.createPackage(dto)).then((response) => {
         this.router.navigate(['/dashboard']);
       }),
   }));
@@ -48,7 +48,7 @@ export class PackageComponent {
   userQuery = injectQuery(() => ({
     enabled: true,
     queryKey: ['user'],
-    queryFn: async context => {
+    queryFn: async (context) => {
       const abort = fromEvent(context.signal, 'abort');
       return lastValueFrom(this.userService.allUsers().pipe(takeUntil(abort)));
     },
@@ -59,50 +59,6 @@ export class PackageComponent {
   getUsers(): Observable<User[]> {
     return of(this.userQuery.data() ?? []);
   }
-
-  // uuidValidator(control: FormControl): { [key: string]: any } | null {
-  //   const value = control.value;
-  //   const uuidRegex =
-  //     /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
-  //   if (!uuidRegex.test(value)) {
-  //     return { invalidUuid: true };
-  //   }
-
-  //   return null;
-  // }
-
-  // geoJsonPointValidator(control: FormControl): { [key: string]: any } | null {
-  //   const value = control.value;
-  //   const valueArray = value.split(',');
-  //   console.log({ value });
-
-  //   if (!Array.isArray(valueArray) || valueArray.length !== 2) {
-  //     return { invalidGeoJsonPoint: true };
-  //   }
-
-  //   const [longitude, latitude] = valueArray.map(parseFloat);
-
-  //   if (typeof longitude !== 'number' || longitude < -180 || longitude > 180) {
-  //     return { invalidGeoJsonPoint: true };
-  //   }
-
-  //   if (typeof latitude !== 'number' || latitude < -90 || latitude > 90) {
-  //     return { invalidGeoJsonPoint: true };
-  //   }
-
-  //   return null;
-  // }
-
-  // firstNameAsyncValidator = z.string().refine(
-  //   async value => {
-  //     await new Promise(resolve => setTimeout(resolve, 1000));
-  //     return !value.includes('error');
-  //   },
-  //   {
-  //     message: "No 'error' allowed in first name",
-  //   }
-  // );
 
   form = injectForm({
     defaultValues: {
@@ -120,10 +76,10 @@ export class PackageComponent {
     onSubmit: ({ value }) => {
       const sender = this.userQuery
         .data()
-        ?.find(user => user._id === value.from_user);
+        ?.find((user) => user._id === value.from_user);
       const recipient = this.userQuery
         .data()
-        ?.find(user => user._id === value.to_user);
+        ?.find((user) => user._id === value.to_user);
 
       const date = new Intl.DateTimeFormat('en-GB', {
         dateStyle: 'medium',
@@ -154,26 +110,22 @@ export class PackageComponent {
         to_user: value.to_user,
       };
 
-      console.log({ dto });
-
       this.packageMutation.mutate(dto, {
         onSuccess: () => {
           this.router.navigate(['/dashboard']);
         },
-        onError: e => {
-          console.log({ e });
+        onError: (e) => {
           alert(JSON.stringify((e as any).error.message));
         },
       });
     },
-    // Add a validator to support Zod usage in Form and Field
     validatorAdapter: zodValidator,
   });
 
   z = z;
 
-  canSubmit = injectStore(this.form, state => state.canSubmit);
-  isSubmitting = injectStore(this.form, state => state.isSubmitting);
+  canSubmit = injectStore(this.form, (state) => state.canSubmit);
+  isSubmitting = injectStore(this.form, (state) => state.isSubmitting);
 
   handleSubmit(event: SubmitEvent) {
     event.preventDefault();

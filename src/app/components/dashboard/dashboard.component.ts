@@ -82,12 +82,6 @@ export class DashboardComponent implements OnInit {
     this.socket.on(WsEvents.StatusChanged, (data) => {
       console.log({ [WsEvents.StatusChanged]: data });
     });
-
-    this.socket.emit(WsEvents.StatusChanged, {
-      delivery_id: this.deliveryId(),
-      event: WsEvents.StatusChanged,
-      status: DeliveryStatus.PickedUp,
-    } as StatusChangedEventDto);
   }
 
   ngOnInit(): void {
@@ -132,7 +126,6 @@ export class DashboardComponent implements OnInit {
         { enableHighAccuracy: true },
       );
 
-      // Cleanup function to stop watching the position when the subscription is cancelled
       return () => navigator.geolocation.clearWatch(watchId);
     });
   }
@@ -205,7 +198,6 @@ export class DashboardComponent implements OnInit {
     enabled: true,
     queryKey: ['delivery'],
     queryFn: async (context) => {
-      // Cancels the request when component is destroyed before the request finishes
       const abort = fromEvent(context.signal, 'abort');
       return lastValueFrom(
         this.deliveryService.findAllForUser().pipe(takeUntil(abort)),
@@ -223,7 +215,7 @@ export class DashboardComponent implements OnInit {
     defaultValues: {
       delivery: '',
     },
-    // onSubmit: ({ value }) => {},
+
     validatorAdapter: zodValidator,
   });
 
@@ -273,8 +265,6 @@ export class DashboardComponent implements OnInit {
           delivery_id: this.selectedDelivery()!._id,
         });
 
-        console.log('here');
-
         this.sendLocationChangedMessageToRoom({
           delivery_id: this.selectedDelivery()!._id!,
           event: WsEvents.LocationChanged,
@@ -283,7 +273,6 @@ export class DashboardComponent implements OnInit {
             coordinates: [this.center.lng, this.center.lat],
           },
         });
-        console.log('now here');
       } else {
         this.socket.emit(WsEvents.LeaveDeliveryRoom, {
           delivery_id: this.selectedDelivery()!._id,
@@ -301,7 +290,6 @@ export class DashboardComponent implements OnInit {
   }
 
   pickedUp() {
-    console.log('pick up');
     this.socket.emit('status_changed', {
       delivery_id: this.deliveryId(),
       event: WsEvents.StatusChanged,

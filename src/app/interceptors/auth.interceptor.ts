@@ -49,7 +49,6 @@ export class AuthInterceptor implements HttpInterceptor {
     next: HttpHandler,
   ): Observable<HttpEvent<any>> {
     const token = this.cookieService.get('access_token');
-    console.log({ token });
 
     if (token) {
       const reqCopy = request.clone();

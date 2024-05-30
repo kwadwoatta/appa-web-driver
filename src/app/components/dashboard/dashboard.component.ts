@@ -32,6 +32,8 @@ import { DeliveryService } from 'src/app/services/delivery.service';
 import {
   Delivery,
   DeliveryStatus,
+  JoinDeliveryRoomDto,
+  LeaveDeliveryRoomDto,
   LocationChangedEventDto,
   StatusChangedEventDto,
   WsEvents,
@@ -263,7 +265,8 @@ export class DashboardComponent implements OnInit {
 
         this.socket.emit(WsEvents.JoinDeliveryRoom, {
           delivery_id: this.selectedDelivery()!._id,
-        });
+          event: WsEvents.JoinDeliveryRoom,
+        } satisfies JoinDeliveryRoomDto);
 
         this.sendLocationChangedMessageToRoom({
           delivery_id: this.selectedDelivery()!._id!,
@@ -277,16 +280,15 @@ export class DashboardComponent implements OnInit {
         this.socket.emit(WsEvents.LeaveDeliveryRoom, {
           delivery_id: this.selectedDelivery()!._id,
           event: WsEvents.LeaveDeliveryRoom,
-        });
+        } satisfies LeaveDeliveryRoomDto);
       }
     }
   });
 
   sendLocationChangedMessageToRoom(message: LocationChangedEventDto) {
-    this.socket.emit(
-      WsEvents.LocationChanged,
-      JSON.parse(JSON.stringify(message)),
-    );
+    this.socket.emit(WsEvents.LocationChanged, {
+      ...message,
+    } satisfies LocationChangedEventDto);
   }
 
   pickedUp() {
@@ -294,7 +296,7 @@ export class DashboardComponent implements OnInit {
       delivery_id: this.deliveryId(),
       event: WsEvents.StatusChanged,
       status: DeliveryStatus.PickedUp,
-    } as StatusChangedEventDto);
+    } satisfies StatusChangedEventDto);
   }
 
   inTransit() {
@@ -302,7 +304,7 @@ export class DashboardComponent implements OnInit {
       delivery_id: this.deliveryId(),
       event: WsEvents.StatusChanged,
       status: DeliveryStatus.InTransit,
-    } as StatusChangedEventDto);
+    } satisfies StatusChangedEventDto);
   }
 
   delivered() {
@@ -310,7 +312,7 @@ export class DashboardComponent implements OnInit {
       delivery_id: this.deliveryId(),
       event: WsEvents.StatusChanged,
       status: DeliveryStatus.Delivered,
-    } as StatusChangedEventDto);
+    } satisfies StatusChangedEventDto);
   }
 
   failed() {
@@ -318,6 +320,6 @@ export class DashboardComponent implements OnInit {
       delivery_id: this.deliveryId(),
       event: WsEvents.StatusChanged,
       status: DeliveryStatus.Failed,
-    } as StatusChangedEventDto);
+    } satisfies StatusChangedEventDto);
   }
 }

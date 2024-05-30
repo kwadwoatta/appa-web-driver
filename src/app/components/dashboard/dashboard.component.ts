@@ -33,6 +33,7 @@ import {
   Delivery,
   DeliveryStatus,
   LocationChangedEventDto,
+  StatusChangedEventDto,
   WsEvents,
 } from 'src/common';
 import { z } from 'zod';
@@ -64,14 +65,16 @@ export class DashboardComponent implements OnInit {
 
   constructor(private cookieService: CookieService) {
     const token = cookieService.get('access_token');
-    this.socket = io('http://localhost:3000', {
-      query: {
+    this.socket = io('http://localhost:3000/events', {
+      auth: {
         token,
       },
     });
   }
 
   ngOnInit(): void {
+    this.joinRoom();
+
     setInterval(() => {
       console.log('20 seconds have passed');
       this.joinRoom();
@@ -104,7 +107,24 @@ export class DashboardComponent implements OnInit {
           this.options.center = this.center;
           this.addMarker(this.center, '#FF0000', 'Driver');
 
-          // console.log({ markers: this.markers });
+          this.socket.on(WsEvents.JoinDeliveryRoom, () => {
+            console.log({ [WsEvents.JoinDeliveryRoom]: 'data' });
+          });
+
+          this.socket.on(WsEvents.LocationChanged, (data) => {
+            console.log({ [WsEvents.LocationChanged]: data });
+          });
+
+          this.socket.on(WsEvents.StatusChanged, (data) => {
+            console.log({ [WsEvents.StatusChanged]: data });
+          });
+
+          this.socket.emit(WsEvents.StatusChanged, {
+            delivery_id: this.deliveryId(),
+            event: WsEvents.StatusChanged,
+            status: DeliveryStatus.PickedUp,
+          } as StatusChangedEventDto);
+
           this.joinRoom();
           observer.next(position);
         },
@@ -122,7 +142,6 @@ export class DashboardComponent implements OnInit {
       switchMap((geoLocPos) =>
         this.getDeliveries().pipe(
           tap((deliveries) => {
-            // console.log({ deliveries });
             const interest = deliveries.find(
               (d) => d._id === this.form.getFieldValue('delivery'),
             );
@@ -254,6 +273,8 @@ export class DashboardComponent implements OnInit {
           delivery_id: this.selectedDelivery()!._id,
         });
 
+        console.log('here');
+
         this.sendLocationChangedMessageToRoom({
           delivery_id: this.selectedDelivery()!._id!,
           event: WsEvents.LocationChanged,
@@ -262,6 +283,7 @@ export class DashboardComponent implements OnInit {
             coordinates: [this.center.lng, this.center.lat],
           },
         });
+        console.log('now here');
       } else {
         this.socket.emit(WsEvents.LeaveDeliveryRoom, {
           delivery_id: this.selectedDelivery()!._id,
@@ -272,6 +294,42 @@ export class DashboardComponent implements OnInit {
   });
 
   sendLocationChangedMessageToRoom(message: LocationChangedEventDto) {
-    this.socket.emit(WsEvents.LocationChanged, message);
+    this.socket.emit(
+      WsEvents.LocationChanged,
+      JSON.parse(JSON.stringify(message)),
+    );
+  }
+
+  pickedUp() {
+    console.log('pick up');
+    this.socket.emit('status_changed', {
+      delivery_id: this.deliveryId(),
+      event: WsEvents.StatusChanged,
+      status: DeliveryStatus.PickedUp,
+    } as StatusChangedEventDto);
+  }
+
+  inTransit() {
+    this.socket.emit(WsEvents.StatusChanged, {
+      delivery_id: this.deliveryId(),
+      event: WsEvents.StatusChanged,
+      status: DeliveryStatus.InTransit,
+    } as StatusChangedEventDto);
+  }
+
+  delivered() {
+    this.socket.emit(WsEvents.StatusChanged, {
+      delivery_id: this.deliveryId(),
+      event: WsEvents.StatusChanged,
+      status: DeliveryStatus.Delivered,
+    } as StatusChangedEventDto);
+  }
+
+  failed() {
+    this.socket.emit(WsEvents.StatusChanged, {
+      delivery_id: this.deliveryId(),
+      event: WsEvents.StatusChanged,
+      status: DeliveryStatus.PickedUp,
+    } as StatusChangedEventDto);
   }
 }

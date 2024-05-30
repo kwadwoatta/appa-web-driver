@@ -6,7 +6,7 @@ import {
   HttpRequest,
   HttpResponse,
 } from '@angular/common/http';
-import { inject, Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { CookieService } from 'ngx-cookie-service';
 import { Observable, throwError } from 'rxjs';
 import { catchError, tap } from 'rxjs/operators';
@@ -23,23 +23,17 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
     });
 
     return next(authReq).pipe(
-      catchError(error => {
+      catchError((error) => {
         console.error({ error });
         if (error.status === 401) {
-          // Handle 401 Unauthorized error here
           console.error('Unauthorized request - 401:', error);
           cookieService.delete('access_token');
-
-          // Optionally, you can perform actions such as logging out the user,
-          // redirecting to a login page, or showing a specific error message.
         } else {
-          // Handle other types of errors here
           console.error('HTTP Error:', error);
         }
 
-        // Rethrow the error so it can be handled by other interceptors or components
         return throwError(error);
-      })
+      }),
     );
   }
 
@@ -52,7 +46,7 @@ export class AuthInterceptor implements HttpInterceptor {
 
   intercept(
     request: HttpRequest<any>,
-    next: HttpHandler
+    next: HttpHandler,
   ): Observable<HttpEvent<any>> {
     const token = this.cookieService.get('access_token');
     console.log({ token });
@@ -74,11 +68,11 @@ export class HttpResponseInterceptor implements HttpInterceptor {
 
   intercept(
     request: HttpRequest<any>,
-    next: HttpHandler
+    next: HttpHandler,
   ): Observable<HttpEvent<any>> {
     return next.handle(request).pipe(
       tap({
-        next: event => {
+        next: (event) => {
           if (event instanceof HttpResponse) {
             if (event.status == 401) {
               alert('Unauthorized access!');
@@ -86,14 +80,14 @@ export class HttpResponseInterceptor implements HttpInterceptor {
           }
           return event;
         },
-        error: error => {
+        error: (error) => {
           if (error.status === 401) {
             alert('Unauthorized access!');
           } else if (error.status === 404) {
             alert('Page Not Found!');
           }
         },
-      })
+      }),
     );
   }
 }

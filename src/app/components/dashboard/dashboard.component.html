@@ -1,6 +1,5 @@
 <div class="p-10 flex flex-col w-screen h-full !gap-5 justify-between">
   <form
-    (submit)="handleSubmit($event)"
     class="card p-fluid flex justify-center items-end p-fluid [&>*]:w-full [&>label]:block [&>label]:font-bold [&>label]:mb-2 gap-2"
   >
     <div class="w-8/12 flex-grow">
@@ -44,7 +43,7 @@
             <ng-container
               *ngIf="delivery._id === this.form.getFieldValue('delivery')"
             >
-              <div class="flex justify-evenly w-full">
+              <div class="flex justify-evenly w-screen">
                 <div class="flex flex-col">
                   <h1 class="text-rose-600 font-bold">Package Details</h1>
                   <div class="text-gray-700">
@@ -73,7 +72,7 @@
                   </div>
                 </div>
 
-                <div class="flex justify-evenly">
+                <div class="flex justify-evenly flex-grow-1">
                   <google-map
                     [zoom]="zoom"
                     [center]="center"
@@ -87,6 +86,48 @@
                       [options]="marker.value.markerOptions"
                     />
                   </google-map>
+
+                  <div class="flex flex-col gap-5">
+                    <button
+                      (click)="pickedUp()"
+                      [disabled]="delivery.status !== 'open'"
+                      [raised]="true"
+                      pButton
+                      pRipple
+                      label="Picked Up"
+                      class="p-button-info"
+                    ></button>
+                    <button
+                      (click)="inTransit()"
+                      [disabled]="delivery.status !== 'picked-up'"
+                      [raised]="true"
+                      pButton
+                      pRipple
+                      label="In Transit"
+                      class="p-button-warning"
+                    ></button>
+                    <button
+                      (click)="delivered()"
+                      [disabled]="delivery.status !== 'in-transit'"
+                      [raised]="true"
+                      pButton
+                      pRipple
+                      label="Delivered"
+                      class="p-button-success"
+                    ></button>
+                    <button
+                      (click)="failed()"
+                      [disabled]="
+                        delivery.status !== 'delivered' &&
+                        delivery.status !== 'failed'
+                      "
+                      [raised]="true"
+                      pButton
+                      pRipple
+                      label="Failed"
+                      class="p-button-danger"
+                    ></button>
+                  </div>
                 </div>
               </div>
             </ng-container>

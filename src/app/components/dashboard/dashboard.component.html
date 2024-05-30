@@ -45,28 +45,50 @@
             <ng-container
               *ngIf="delivery._id === this.form.getFieldValue('delivery')"
             >
-              <h1 class="text-rose-600 font-bold">Package Details</h1>
-              <div class="text-gray-700">
-                <p>
-                  {{ delivery.package.description }}
-                </p>
-                <p>Height: {{ delivery.package.height }}</p>
-                <p>Weight: {{ delivery.package.weight }}</p>
-                <p>Width: {{ delivery.package.width }}</p>
-                <p>Depth: {{ delivery.package.depth }}</p>
-              </div>
+              <div class="flex justify-evenly w-full">
+                <div class="flex flex-col">
+                  <h1 class="text-rose-600 font-bold">Package Details</h1>
+                  <div class="text-gray-700">
+                    <p>
+                      {{ delivery.package.description }}
+                    </p>
+                    <p>Height: {{ delivery.package.height }}</p>
+                    <p>Weight: {{ delivery.package.weight }}</p>
+                    <p>Width: {{ delivery.package.width }}</p>
+                    <p>Depth: {{ delivery.package.depth }}</p>
+                  </div>
 
-              <h1 class="text-green-600 font-bold mt-5">Delivery Details</h1>
-              <div class="text-gray-700">
-                <p>
-                  {{ delivery.description }}
-                </p>
-                <p>Status: {{ delivery.status.toUpperCase() }}</p>
-                <p>
-                  Customer: {{ delivery.customer.firstName }}
-                  {{ delivery.customer.lastName }}
-                </p>
-                <p>Delivery Address: {{ delivery.customer.address }}</p>
+                  <h1 class="text-green-600 font-bold mt-5">
+                    Delivery Details
+                  </h1>
+                  <div class="text-gray-700">
+                    <p>
+                      {{ delivery.description }}
+                    </p>
+                    <p>Status: {{ delivery.status.toUpperCase() }}</p>
+                    <p>
+                      Customer: {{ delivery.customer.firstName }}
+                      {{ delivery.customer.lastName }}
+                    </p>
+                    <p>Delivery Address: {{ delivery.customer.address }}</p>
+                  </div>
+                </div>
+
+                <div class="flex justify-evenly">
+                  <google-map
+                    [zoom]="zoom"
+                    [center]="center"
+                    [options]="options"
+                  >
+                    <map-marker
+                      *ngFor="
+                        let marker of markers | keyvalue: keepOriginalOrder
+                      "
+                      [position]="marker.value.markerPosition"
+                      [options]="marker.value.markerOptions"
+                    />
+                  </google-map>
+                </div>
               </div>
             </ng-container>
           }

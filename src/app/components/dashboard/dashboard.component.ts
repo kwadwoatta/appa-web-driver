@@ -70,6 +70,24 @@ export class DashboardComponent implements OnInit {
         token,
       },
     });
+
+    this.socket.on(WsEvents.JoinDeliveryRoom, () => {
+      console.log({ [WsEvents.JoinDeliveryRoom]: 'data' });
+    });
+
+    this.socket.on(WsEvents.LocationChanged, (data) => {
+      console.log({ [WsEvents.LocationChanged]: data });
+    });
+
+    this.socket.on(WsEvents.StatusChanged, (data) => {
+      console.log({ [WsEvents.StatusChanged]: data });
+    });
+
+    this.socket.emit(WsEvents.StatusChanged, {
+      delivery_id: this.deliveryId(),
+      event: WsEvents.StatusChanged,
+      status: DeliveryStatus.PickedUp,
+    } as StatusChangedEventDto);
   }
 
   ngOnInit(): void {
@@ -106,24 +124,6 @@ export class DashboardComponent implements OnInit {
           };
           this.options.center = this.center;
           this.addMarker(this.center, '#FF0000', 'Driver');
-
-          this.socket.on(WsEvents.JoinDeliveryRoom, () => {
-            console.log({ [WsEvents.JoinDeliveryRoom]: 'data' });
-          });
-
-          this.socket.on(WsEvents.LocationChanged, (data) => {
-            console.log({ [WsEvents.LocationChanged]: data });
-          });
-
-          this.socket.on(WsEvents.StatusChanged, (data) => {
-            console.log({ [WsEvents.StatusChanged]: data });
-          });
-
-          this.socket.emit(WsEvents.StatusChanged, {
-            delivery_id: this.deliveryId(),
-            event: WsEvents.StatusChanged,
-            status: DeliveryStatus.PickedUp,
-          } as StatusChangedEventDto);
 
           this.joinRoom();
           observer.next(position);
@@ -329,7 +329,7 @@ export class DashboardComponent implements OnInit {
     this.socket.emit(WsEvents.StatusChanged, {
       delivery_id: this.deliveryId(),
       event: WsEvents.StatusChanged,
-      status: DeliveryStatus.PickedUp,
+      status: DeliveryStatus.Failed,
     } as StatusChangedEventDto);
   }
 }

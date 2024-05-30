@@ -1,13 +1,19 @@
 import { CommonModule, KeyValuePipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  OnInit,
+  computed,
+  inject,
+} from '@angular/core';
 import { GoogleMapsModule } from '@angular/google-maps';
-import { Router, RouterOutlet } from '@angular/router';
 import { TanStackField, injectForm, injectStore } from '@tanstack/angular-form';
 import {
   injectQuery,
   injectQueryClient,
 } from '@tanstack/angular-query-experimental';
 import { zodValidator } from '@tanstack/zod-form-adapter';
+import { CookieService } from 'ngx-cookie-service';
 import { ButtonModule } from 'primeng/button';
 import { DropdownModule } from 'primeng/dropdown';
 import { InputTextModule } from 'primeng/inputtext';
@@ -21,8 +27,14 @@ import {
   takeUntil,
   tap,
 } from 'rxjs';
+import { Socket, io } from 'socket.io-client';
 import { DeliveryService } from 'src/app/services/delivery.service';
-import { Delivery } from 'src/common';
+import {
+  Delivery,
+  DeliveryStatus,
+  LocationChangedEventDto,
+  WsEvents,
+} from 'src/common';
 import { z } from 'zod';
 
 type Marker = {
@@ -36,7 +48,6 @@ type Marker = {
   standalone: true,
   imports: [
     ButtonModule,
-    RouterOutlet,
     InputTextModule,
     ButtonModule,
     DropdownModule,
@@ -48,8 +59,24 @@ type Marker = {
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.css',
 })
-export class DashboardComponent {
-  constructor(private router: Router) {}
+export class DashboardComponent implements OnInit {
+  private socket: Socket;
+
+  constructor(private cookieService: CookieService) {
+    const token = cookieService.get('access_token');
+    this.socket = io('http://localhost:3000', {
+      query: {
+        token,
+      },
+    });
+  }
+
+  ngOnInit(): void {
+    setInterval(() => {
+      console.log('20 seconds have passed');
+      this.joinRoom();
+    }, 20000);
+  }
 
   keepOriginalOrder = (a: any, b: any) => a.key;
 
@@ -60,7 +87,7 @@ export class DashboardComponent {
     zoomControl: true,
     scrollwheel: false,
     disableDoubleClickZoom: true,
-    gestureHandling: 'auto',
+    gestureHandling: 'greedy',
     maxZoom: 15,
     minZoom: 8,
   };
@@ -75,10 +102,10 @@ export class DashboardComponent {
             lng: position.coords.longitude,
           };
           this.options.center = this.center;
-          this.addMarker(this.center, '#FF0000');
+          this.addMarker(this.center, '#FF0000', 'Driver');
 
-          console.log({ markers: this.markers });
-
+          // console.log({ markers: this.markers });
+          this.joinRoom();
           observer.next(position);
         },
         (error) => observer.error(error),
@@ -95,7 +122,7 @@ export class DashboardComponent {
       switchMap((geoLocPos) =>
         this.getDeliveries().pipe(
           tap((deliveries) => {
-            console.log({ deliveries });
+            // console.log({ deliveries });
             const interest = deliveries.find(
               (d) => d._id === this.form.getFieldValue('delivery'),
             );
@@ -107,6 +134,7 @@ export class DashboardComponent {
                   lng: interest.package.from_location.coordinates[0],
                 },
                 '#0000FF',
+                'Origin',
               );
 
               this.addMarker(
@@ -115,6 +143,7 @@ export class DashboardComponent {
                   lng: interest.package.to_location.coordinates[0],
                 },
                 '#00FF00',
+                'Destination',
               );
             }
           }),
@@ -124,7 +153,11 @@ export class DashboardComponent {
     )
     .subscribe();
 
-  async addMarker(position: google.maps.LatLngLiteral, color: string) {
+  async addMarker(
+    position: google.maps.LatLngLiteral,
+    color: string,
+    title: string,
+  ) {
     const existingMarker = this.markers.get(color);
 
     if (existingMarker) {
@@ -134,6 +167,7 @@ export class DashboardComponent {
         markerPosition: position,
         markerOptions: {
           position,
+          title,
           content: {
             borderColor: color,
             background: color,
@@ -176,12 +210,68 @@ export class DashboardComponent {
 
   z = z;
 
-  canSubmit = injectStore(this.form, (state) => state.canSubmit);
-  isSubmitting = injectStore(this.form, (state) => state.isSubmitting);
-
   handleSubmit(event: SubmitEvent) {
     event.preventDefault();
     event.stopPropagation();
     this.form.handleSubmit();
+  }
+
+  deliveryId = injectStore(this.form, (state) => state.values.delivery);
+
+  selectedDelivery = computed(() => {
+    return (this.deliveryQuery.data() ?? []).find(
+      (d) => d._id === this.deliveryId(),
+    );
+  });
+
+  joinRoom = computed(() => {
+    if (this.selectedDelivery()) {
+      console.log(this.selectedDelivery());
+
+      if (
+        this.selectedDelivery()!.status !== DeliveryStatus.Failed ||
+        this.selectedDelivery()!.status !== DeliveryStatus.Delivered
+      ) {
+        this.addMarker(
+          {
+            lat: this.selectedDelivery()!.package.from_location.coordinates[1],
+            lng: this.selectedDelivery()!.package.from_location.coordinates[0],
+          },
+          '#0000FF',
+          'Origin',
+        );
+
+        this.addMarker(
+          {
+            lat: this.selectedDelivery()!.package.to_location.coordinates[1],
+            lng: this.selectedDelivery()!.package.to_location.coordinates[0],
+          },
+          '#00FF00',
+          'Destination',
+        );
+
+        this.socket.emit(WsEvents.JoinDeliveryRoom, {
+          delivery_id: this.selectedDelivery()!._id,
+        });
+
+        this.sendLocationChangedMessageToRoom({
+          delivery_id: this.selectedDelivery()!._id!,
+          event: WsEvents.LocationChanged,
+          location: {
+            type: 'Point',
+            coordinates: [this.center.lng, this.center.lat],
+          },
+        });
+      } else {
+        this.socket.emit(WsEvents.LeaveDeliveryRoom, {
+          delivery_id: this.selectedDelivery()!._id,
+          event: WsEvents.LeaveDeliveryRoom,
+        });
+      }
+    }
+  });
+
+  sendLocationChangedMessageToRoom(message: LocationChangedEventDto) {
+    this.socket.emit(WsEvents.LocationChanged, message);
   }
 }

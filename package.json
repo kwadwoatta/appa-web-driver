@@ -26,6 +26,7 @@
     "ngx-cookie-service": "^18.0.0",
     "primeng": "^17.17.0",
     "rxjs": "~7.8.0",
+    "socket.io-client": "^4.7.5",
     "tslib": "^2.3.0",
     "zod": "^3.23.8",
     "zone.js": "~0.14.3"

@@ -64,3 +64,33 @@ export interface Point {
   type: 'Point';
   coordinates: number[];
 }
+
+export interface JoinDeliveryRoomDto {
+  event: WsEvents.JoinDeliveryRoom;
+  delivery_id: string;
+}
+
+export interface LeaveDeliveryRoomDto {
+  event: WsEvents.LeaveDeliveryRoom;
+  delivery_id: string;
+}
+
+export interface LocationChangedEventDto {
+  event: WsEvents.LocationChanged;
+  delivery_id: string;
+  location: Point;
+}
+
+export interface StatusChangedEventDto {
+  event: WsEvents.StatusChanged;
+  delivery_id: string;
+  status: DeliveryStatus;
+}
+
+export enum WsEvents {
+  JoinDeliveryRoom = 'join_delivery_room',
+  LeaveDeliveryRoom = 'leave_delivery_room',
+  LocationChanged = 'location_changed',
+  StatusChanged = 'status_changed',
+  DeliveryUpdated = 'delivery_updated',
+}
